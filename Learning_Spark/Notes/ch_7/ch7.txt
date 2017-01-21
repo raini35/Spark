@@ -1,1 +1,89 @@
+//CHAPTER 7 
+After reading this chapter you'll have everything you need to run a distributed Spark 
+program. The following chapter will cover tuning and debugging applications 
+
+
 //SPARK RUNTIME ARCHITECTURE 
+-Spark uses a master/slave architecture with one central coordinator and many distributed
+workers. The central coordinator is called the driver. 
+	-The driver communicates with a large number of distributed workers called executors
+
+-The driver runs in its own Java process and each executor is a separate Java process 
+
+-Spark application = driver + executors
+
+-When the driver runs it performs two duties: 
+	1. Converting a user program into tasks
+	2. Scheduling tasks on executors 
+	
+-Tasks are the smallest unit of work in Spark 
+
+-Each executor represents a process capable of running tasks and storing RDD data
+
+-Executors = worker processes responsible for running the individual tasks in a given 
+Spark job 
+	-They have two roles: 
+		1. Run tasks and return results to the driver
+		2. Provide in-memory storage for RDDs that are cached by user programs through a 
+		service called the Block Manager that lives within each executor 
+		
+-Spark depends on cluster managers to launch executors and, in certain cases, to launch 
+the driver
+
+-You use 'spark-submit' to submit your program 
+
+-General format for spark-submit 
+	bin/spark-submit [options] <app jar | python file> [app options]
+	
+	ex. bin/spark-submit --master spark://host:7707 --executor-memory 10g my_script.py
+	
+	ex. Using spark-submit with various options 
+	
+	bin/spark-submit \
+	--master spark://hostname:77077 \
+	--deploy-mode cluster \
+	--class com.databricks.examples.SparkExample \ 
+	--name "Example Program" \
+	--jars dep1.jar, dep2.jar, dep3.jar \ 
+	--total-executor-cores 300 \ 
+	--executor-memory 10g \ 
+	myApp.jar "options" "to your application" "go here" 
+	
+-It's common practice to rely on a build tool to produce a single large JAR containing 
+the entire transitive dependency graph of an application 
+	-Maven is used for Java & sbt is used for Scala 
+	
+-USING SBT FOR SCALA APPLICATION 
+	- At the root of the project create a build file called build.sbt (Source code should 
+	live in src/main/scala
+	-Ex build.sbt file 
+	import AssemblyKeys._
+	
+	name := "Simple Project" 
+	
+	version := "1.0" 
+	
+	organization := "com.databricks" 
+	
+	scalaVersion := "2.10.3" 
+	
+	libraryDependencies ++= Seq( 
+		"org.apache.spark" % "spark-core2.10" % "1.2.0" % "provided", 
+		
+		"net.sf.jopt-simple" % "jopt-simple" % "4.3", 
+		"joda-time" % "joda-time" % "2.0"
+	)
+	
+	assemblySettings 
+	
+	jarName in assembly := "my-project-assembly.jar" 
+	
+	assemblyOption in assembly :=
+		(assemblyOption in assembly).value.copy(includeScala = false)
+		
+	-To enable this plug-in we have to also include a small file in a project/directory 
+	that lists the dependency on the plug-in 
+	-Ex project/assembly.sbt 
+	addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
+	
+	
